@@ -25,7 +25,7 @@ const getBalance = async (address) => {
 }
 
 const signRawTransaction = ({address, gas, gasPrice}) => {
-
+  web3.eth.accounts.signTransaction(tx, privateKey [, callback]);
 }
 
 const broadcastTransaction = (rawTx) => {
@@ -42,7 +42,13 @@ const broadcastTransaction = (rawTx) => {
   return resp
 }
 
-const sweepAddress = ({address, gas, gasPrice}) => {
+const keyToAddress = (privateKey) => {
+  //
+  return address
+}
+
+const sweepAddress = ({privateKey, gas, gasPrice}) => {
+  const address = keyToAddress(privateKey)
   const balance = await getBalance(address)
   const rawTX = signRawTransaction({address, gas, gasPrice})
   return await broadcastTransaction(rawTX)
@@ -50,9 +56,9 @@ const sweepAddress = ({address, gas, gasPrice}) => {
 
 const sweepAddresses = ({mnemonic, from, number, gas, gasPrice}) => {
   const hdKey = mnemonicToHdKey(mnemonic)
-  const addresses = getAddresses(hdKey)
-  return addresses.map((address) => {
-    sweepAddress({address, gas, gasPrice})
+  const privateKeys = getPrivateKeys(hdKey)
+  return privateKeys.map((privateKey) => {
+    sweepAddress({privateKey, gas, gasPrice})
   })
 }
 
