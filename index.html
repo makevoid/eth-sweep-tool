@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <link rel="stylesheet" href="/css/vendor/bulma.css">
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body>
+    <section class="hero is-primary">
+      <div class="hero-body">
+        <div class="container">
+          <h1 class="title">
+            ETH Sweep
+          </h1>
+        </div>
+      </div>
+    </section>
+
+    <div class="container">
+      <div class="s20"></div>
+
+      <form class="" action="index.html" method="post">
+
+        <div class="field">
+          <label class="label">ETH Sweep Address</label>
+          <small>Your Ethereum Sweep Address, all funds will be deposited</small>
+          <div class="control">
+            <input class="input" type="text" placeholder="0x....">
+          </div>
+        </div>
+        <div class="s20"></div>
+
+        <h4 class="title is-5">Settings</h4>
+        <div class="field">
+          <label class="label">Gas (wei)</label>
+          <div class="control">
+            <input class="input" type="text" placeholder="" value="34000">
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">GasPrice (gwei)</label>
+          <div class="control">
+            <input class="input" type="text" placeholder="" value="32">
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label">Mnemonic</label>
+          <div class="control">
+            <input class="input" type="text" placeholder="">
+          </div>
+        </div>
+        <div class="s20"></div>
+
+        <h4 class="title is-5">Address Indices</h4>
+
+        <div class="field">
+          <label class="label">From:</label>
+          <div class="control">
+            <input class="input" type="number" placeholder="" value="0">
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Number:</label>
+          <div class="control">
+            <input class="input" type="number" placeholder="" value="100" max="1000">
+          </div>
+        </div>
+
+        <input type="submit" name="" class="button is-primary" value="Scan">
+        <div class="s30"></div>
+
+        <h4 class="title is-5">Balances</h4>
+        <ul>
+          <li>0.1 ETH - 0x1234</li>
+          <li>0.1 ETH - 0x1235</li>
+          <li>...</li>
+        </ul>
+        <div class="s10"></div>
+
+
+        <input type="submit" name="" class="button is-primary" value="SWEEP">
+        <div class="s30"></div>
+
+        <h4 class="title is-5">Status:</h4>
+        <pre>Idle</pre>
+        <div class="s50"></div>
+
+      </form>
+    </div>
+
+
+    <script type="text/javascript">
+      console.log(eth.accounts)
+    </script>
+  </body>
+</html>
