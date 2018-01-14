@@ -3,14 +3,18 @@ require('isomorphic-fetch')
 const c = console
 const BitcoreMnemonic = require('bitcore-mnemonic')
 const Web3 = require('web3')
-const web3 = new Web3()
+const web3 = new Web3("https://mainnet.infura.io")
+const Tx = require('ethereumjs-tx')
+const numberToHex = web3.utils.numberToHex
+const toWei       = web3.utils.toWei
 
+// ARGS
 const recipient = "0x91bd87eb44223e77625aa3cb61c43c38d899494e" // local - antani
 const mnemonic = "title middle final artist fancy step clip front purity pupil ghost basket"
 const from = 0
 const number = 3
-const gas = 34000 // wei
-const gasPrice = 21 // gwei
+const gas = "34000" // wei
+const gasPrice = "21" // gwei
 
 const mnemonicToHdKey = (mnemonic) => {
   return new BitcoreMnemonic(mnemonic).toHDPrivateKey()
@@ -47,33 +51,77 @@ const getBalance = async (address) => {
 }
 
 const signRawTransaction = async ({recipient, account, balance, gas, gasPrice}) => {
-  const gasPriceWei = web3.utils.toWei(gasPrice, "gwei")
-  const fees = gas * gasPriceWei
+  // ETH 0.000714
+  // 714000000000000 wei
+  const gasPriceWei = toWei(gasPrice, "gwei")
+  const fees = Number(gas) * Number(gasPriceWei)
+  c.log("fees    ", fees)
+  c.log("bal     ", balance)
   const netBalance = balance - fees
+  // const value = netBalance
+  const value = 10000000000
+  c.log("bal Net ", netBalance)
+  c.log("value   ", value + fees)
   const txData = {
-    value: netBalance,
+    value: numberToHex(value),
     to: recipient,
-    gas: gas,
-    gasPrice: gasPrice,
-    // from: account.address,
+    gas: numberToHex(Number(gas)),
+    gasPrice: numberToHex(Number(gasPriceWei)),
+    from: account.address,
+    nonce: 6,
   }
-  c.log("Sign transaction", JSON.stringify(txData, nil, 2))
-  const tx = await account.signTransaction(txData)
-  const rawTx = tx
-  return rawTX
+
+  c.log(account)
+
+  const transaction = await account.signTransaction(txData)
+  const txRaw = transaction.rawTransaction
+  c.log("TX RAW", txRaw)
+  const tx = txRaw.slice(2, txRaw.length) // remove 0x
+  const txBuffer = new Buffer(tx, "hex")
+  return txBuffer
+
+  // NOT WORKING (outdated doc or outdated method probably)
+  //
+  // const privateKey = new Buffer(account.privateKey, 'hex')
+  // c.log("Sign transaction", JSON.stringify(txData, null, 2))
+  //
+  // const tx = new Tx(txData)
+  // tx.sign(privateKey)
+  // const serializedTx = tx.serialize()
+  // return serializedTx
 }
 
 const broadcastTransaction = async (rawTx) => {
-  let rawTxHex = rawTX
+  let rawTxHex = rawTx.toString("hex")
+  // rawTxHex = `0x${rawTxHex}`
+  c.log("rawTxHex", rawTxHex)
 
+
+  // dunno why this doesn't works dammit
   const broadcastUrl = `https://api.etherscan.io/api?module=proxy&action=eth_sendRawTransaction&hex=${rawTxHex}`
   let resp = await fetch(broadcastUrl, {
     method: "POST",
     headers: new Headers({
       'Content-Type': 'application/json'
-    })
+    }),
   })
   resp = await resp.json()
+
+
+  // const broadcastUrl = "https://api.blockcypher.com/v1/eth/main/txs/push"
+  // const data = {
+  //   tx: rawTxHex
+  // }
+  // let resp = await fetch(broadcastUrl, {
+  //   method: "POST",
+  //   body: JSON.stringify(data),
+  //   headers: new Headers({
+  //     'Content-Type': 'application/json'
+  //   })
+  // })
+  // resp = await resp.json()
+
+  c.log("broadcast:", resp)
   return resp
 }
 
@@ -85,6 +133,7 @@ const keyToAccount = (privateKey) => {
 const sweepAddress = async ({recipient, privateKey, gas, gasPrice}) => {
   const account = keyToAccount(privateKey)
   const address = account.address
+  c.log("address", address)
   const balance = await getBalance(address)
   let result
   if (balance <= 0) {
@@ -93,8 +142,8 @@ const sweepAddress = async ({recipient, privateKey, gas, gasPrice}) => {
       status: "balanceZero",
     }
   } else {
-    const rawTX = await signRawTransaction({recipient, account, balance, gas, gasPrice})
-    const response = await broadcastTransaction(rawTX)
+    const rawTx = await signRawTransaction({recipient, account, balance, gas, gasPrice})
+    const response = await broadcastTransaction(rawTx)
     result = {
       address: address,
       status: "success",
@@ -104,7 +153,7 @@ const sweepAddress = async ({recipient, privateKey, gas, gasPrice}) => {
   return result
 }
 
-const sweepAddresses = async ({mnemonic, from, number, gas, gasPrice}) => {
+const sweepAddresses = async ({recipient, mnemonic, from, number, gas, gasPrice}) => {
   const hdKey = mnemonicToHdKey(mnemonic)
   const privateKeys = getPrivateKeys({
     hdKey:  hdKey,
@@ -113,6 +162,7 @@ const sweepAddresses = async ({mnemonic, from, number, gas, gasPrice}) => {
   })
   return await privateKeys.map(async (privateKey) => {
     return await sweepAddress({
+      recipient: recipient,
       privateKey: privateKey,
       gas: gas,
       gasPrice: gasPrice,
@@ -139,4 +189,6 @@ main({
   number:     number,
   gas:        gas,
   gasPrice:   gasPrice,
-}).then(console.log)
+}).then((results) => {
+  console.log(results)
+})
