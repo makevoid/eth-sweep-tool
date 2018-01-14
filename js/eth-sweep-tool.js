@@ -7,6 +7,27 @@ const web3 = new Web3("https://mainnet.infura.io")
 const Tx = require('ethereumjs-tx')
 const numberToHex = web3.utils.numberToHex
 const toWei       = web3.utils.toWei
+const isNode = typeof process === 'object'
+let txEmitter
+if (isNode) {
+  const EventEmitter = require('events')
+  class TXEmitter extends EventEmitter {}
+  txEmitter = new TXEmitter()
+} else {
+  const ever = require('ever')
+  txEmitter = ever(document.body)
+}
+
+txEmitter.on('tx', (evt) => {
+  if (evt.stopPropagation) evt.stopPropagation()
+  c.log('transaction submitted')
+  c.log('evt', evt)
+})
+
+const data = { status: "ok" }
+// const data = { status: "error" }
+
+txEmitter.emit('tx', data)
 
 // ARGS
 const recipient = "0x91bd87eb44223e77625aa3cb61c43c38d899494e" // local - antani
@@ -14,7 +35,8 @@ const mnemonic = "title middle final artist fancy step clip front purity pupil g
 const from = 0
 const number = 3
 const gas = "34000" // wei
-const gasPrice = "21" // gwei
+// const gasPrice = "21" // gwei
+const gasPrice = "4" // gwei
 
 const mnemonicToHdKey = (mnemonic) => {
   return new BitcoreMnemonic(mnemonic).toHDPrivateKey()
@@ -68,7 +90,7 @@ const signRawTransaction = async ({recipient, account, balance, gas, gasPrice}) 
     gas: numberToHex(Number(gas)),
     gasPrice: numberToHex(Number(gasPriceWei)),
     from: account.address,
-    nonce: 6,
+    nonce: 7,
   }
 
   c.log(account)

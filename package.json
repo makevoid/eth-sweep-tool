@@ -5,7 +5,13 @@
     "es6-promise": "^4.2.2",
     "ethereum-bip44": "^2.1.3",
     "ethereumjs-tx": "^1.3.3",
+    "ever": "0.0.3",
     "isomorphic-fetch": "^2.2.1",
     "web3": "^1.0.0-beta.27"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babelify": "^8.0.0"
   }
 }
