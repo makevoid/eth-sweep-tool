@@ -26,7 +26,7 @@
           <label class="label">ETH Sweep Address</label>
           <small>Your Ethereum Sweep Address, all funds will be deposited</small>
           <div class="control">
-            <input class="input" type="text" placeholder="0x....">
+            <input name="recipient" class="input" type="text" placeholder="0x....">
           </div>
         </div>
         <div class="s20"></div>
@@ -35,20 +35,20 @@
         <div class="field">
           <label class="label">Gas (wei)</label>
           <div class="control">
-            <input class="input" type="text" placeholder="" value="34000">
+            <input name="gas" class="input" type="text" placeholder="" value="34000">
           </div>
         </div>
         <div class="field">
           <label class="label">GasPrice (gwei)</label>
           <div class="control">
-            <input class="input" type="text" placeholder="" value="32">
+            <input name="gasPrice" class="input" type="text" placeholder="" value="5">
           </div>
         </div>
 
         <div class="field">
           <label class="label">Mnemonic</label>
           <div class="control">
-            <input class="input" type="text" placeholder="">
+            <input name="mnemonic" class="input" type="text" placeholder="">
           </div>
         </div>
         <div class="s20"></div>
@@ -58,16 +58,17 @@
         <div class="field">
           <label class="label">From:</label>
           <div class="control">
-            <input class="input" type="number" placeholder="" value="0">
+            <input name="from" class="input" type="number" placeholder="" value="0">
           </div>
         </div>
         <div class="field">
           <label class="label">Number:</label>
           <div class="control">
-            <input class="input" type="number" placeholder="" value="100" max="1000">
+            <input name="number" class="input" type="number" placeholder="" value="100" max="1000">
           </div>
         </div>
 
+        <!--
         <input type="submit" name="" class="button is-primary" value="Scan">
         <div class="s30"></div>
 
@@ -78,9 +79,11 @@
           <li>...</li>
         </ul>
         <div class="s10"></div>
+        -->
 
-
-        <input type="submit" name="" class="button is-primary" value="SWEEP">
+        <!-- <input type="submit" name="" class="button is-primary" value="SWEEP"> -->
+        <div class="s10"></div>
+        <button type="button" name="button" class="submit button is-primary is-medium">SWEEP</button>
         <div class="s30"></div>
 
         <h4 class="title is-5">Status:</h4>

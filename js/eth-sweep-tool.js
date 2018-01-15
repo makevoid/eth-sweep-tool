@@ -1,13 +1,14 @@
 require('es6-promise').polyfill()
 require('isomorphic-fetch')
 const c = console
+// const EthereumBip44 = require('ethereum-bip44')
 const BitcoreMnemonic = require('bitcore-mnemonic')
 const Web3 = require('web3')
 const web3 = new Web3("https://mainnet.infura.io")
 const Tx = require('ethereumjs-tx')
 const numberToHex = web3.utils.numberToHex
 const toWei       = web3.utils.toWei
-const isNode = typeof process === 'object'
+const isNode = (typeof process === 'object' && typeof process.node === 'string' && typeof process.version === 'string')
 let txEmitter
 if (isNode) {
   const EventEmitter = require('events')
@@ -18,7 +19,7 @@ if (isNode) {
   txEmitter = ever(document.body)
 }
 
-const updateDomStatus(message) {
+const updateDomStatus = (message) => {
   const elem = document.querySelector(".status")
   elem.innerHTML = `${message}\n${elem.innerHTML}`
 }
@@ -32,26 +33,15 @@ const logStatus = (message) => {
 }
 
 txEmitter.on('tx', (evt) => {
-  if (evt.stopPropagation) evt.stopPropagation()
-  c.log('transaction submitted')
-  c.log('evt', evt)
-
-
+  // if (evt.stopPropagation) evt.stopPropagation()
+  // logStatus(JSON.stringify(evt))
+  logStatus(evt.status)
 })
 
 const data = { status: "ok" }
 // const data = { status: "error" }
 
-txEmitter.emit('tx', data)
-
-// ARGS
-const recipient = "0x91bd87eb44223e77625aa3cb61c43c38d899494e" // local - antani
-const mnemonic = "title middle final artist fancy step clip front purity pupil ghost basket"
-const from = 0
-const number = 3
-const gas = "34000" // wei
-// const gasPrice = "21" // gwei
-const gasPrice = "4" // gwei
+txEmitter.emit('tx', { status: "initializing" })
 
 const mnemonicToHdKey = (mnemonic) => {
   return new BitcoreMnemonic(mnemonic).toHDPrivateKey()
@@ -60,11 +50,12 @@ const mnemonicToHdKey = (mnemonic) => {
 const getPrivateKeys = ({hdKey, from, number}) => {
   const privateKeys = []
   let address
-  c.log(from)
+  const masterKey = hdKey.derive("m/44'/60'/0'/0")
   for (var idx = from; idx < number; idx++) {
-    // console.log("range", idx)
-    privateKey = hdKey.derive(idx)
-    privateKeys.push(privateKey.privateKey.toString())
+    privateKey = masterKey.derive(Number(idx))
+    const key = privateKey.privateKey.toString()
+    c.log(key)
+    privateKeys.push(key)
   }
   return privateKeys
 }
@@ -163,16 +154,16 @@ const broadcastTransaction = async (rawTx) => {
 }
 
 const keyToAccount = (privateKey) => {
-  const account = web3.eth.accounts.privateKeyToAccount(privateKey)
+  const account = web3.eth.accounts.privateKeyToAccount(`0x${privateKey}`)
   return account
 }
 
 const sweepAddress = async ({recipient, privateKey, gas, gasPrice}) => {
   const account = keyToAccount(privateKey)
   const address = account.address
-  c.log("address", address)
   const balance = await getBalance(address)
   let result
+  txEmitter.emit('tx', { status: `address: ${address} - balance: ${balance}` })
   if (balance <= 0) {
     result = {
       address: address,
@@ -186,6 +177,7 @@ const sweepAddress = async ({recipient, privateKey, gas, gasPrice}) => {
       status: "success",
       response: response,
     }
+    txEmitter.emit('tx', { status: `Sweeping response: ${JSON.stringify(response)}` })
   }
   return result
 }
@@ -207,7 +199,60 @@ const sweepAddresses = async ({recipient, mnemonic, from, number, gas, gasPrice}
   })
 }
 
+
+
+// test
+
+if (isNode) {
+  console.log("Running test build in Node")
+  const main = async ({recipient, mnemonic, from, number, gas, gasPrice}) => {
+    const outcome = await sweepAddresses({
+      recipient:  recipient,
+      mnemonic:   mnemonic,
+      from:       from,
+      number:     number,
+      gas:        gas,
+      gasPrice:   gasPrice,
+    })
+    return outcome
+  }
+
+  // ARGS
+  const recipient = "0x91bd87eb44223e77625aa3cb61c43c38d899494e" // local - antani
+  const mnemonic = "title middle final artist fancy step clip front purity pupil ghost basket"
+  const from = 0
+  const number = 3
+  const gas = "34000" // wei
+  // const gasPrice = "21" // gwei
+  const gasPrice = "4" // gwei
+
+  main({
+    recipient:  recipient,
+    mnemonic:   mnemonic,
+    from:       from,
+    number:     number,
+    gas:        gas,
+    gasPrice:   gasPrice,
+  }).then((results) => {
+    console.log(results)
+  })
+
+}
+
+// ------------------------------------------------------------------
+
+// UI - TODO: separate view from core - TODO: reimplement in riot.js/vue/react/hyperhtml
+
+if (isNode) {
+  console.log("This is a browser build - exiting Node...")
+  process.exit()
+}
+
 const main = async ({recipient, mnemonic, from, number, gas, gasPrice}) => {
+  if (!recipient || recipient == "" || recipient == "0x") {
+    txEmitter.emit('tx', { status: "recipient blank, aborting!" })
+    return
+  }
   const outcome = await sweepAddresses({
     recipient:  recipient,
     mnemonic:   mnemonic,
@@ -219,13 +264,35 @@ const main = async ({recipient, mnemonic, from, number, gas, gasPrice}) => {
   return outcome
 }
 
-main({
-  recipient:  recipient,
-  mnemonic:   mnemonic,
-  from:       from,
-  number:     number,
-  gas:        gas,
-  gasPrice:   gasPrice,
-}).then((results) => {
-  console.log(results)
+// elements
+document.addEventListener("DOMContentLoaded", function(event) {
+
+  const recipient = document.querySelector("input[name='recipient']")
+  const mnemonic  = document.querySelector("input[name='mnemonic']")
+  const from      = document.querySelector("input[name='from']")
+  const number    = document.querySelector("input[name='number']")
+  const gas       = document.querySelector("input[name='gas']")
+  const gasPrice  = document.querySelector("input[name='gasPrice']")
+  const submitBtn = document.querySelector("button.submit")
+
+  // placeholder values
+  recipient.value = "0x91bd87eb44223e77625aa3cb61c43c38d899494e"
+  mnemonic.value = "title middle final artist fancy step clip front purity pupil ghost basket"
+  number.value = "3"
+
+  submitBtn.addEventListener("click", () => {
+    txEmitter.emit('tx', { status: "sweep started" })
+    main({
+      recipient: recipient.value,
+      mnemonic: mnemonic.value,
+      from: from.value,
+      number: number.value,
+      gas: gas.value,
+      gasPrice: gasPrice.value
+    }).then((results) => {
+      console.log(results)
+    })
+  })
+  txEmitter.emit('tx', { status: "initialized" })
+
 })
