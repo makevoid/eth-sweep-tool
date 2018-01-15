@@ -11,3 +11,9 @@ npm i -g browserify babelify
 ```
 browserify js/eth-sweep-tool.js > js/dist/bundle.js
 ```
+
+### Watch
+
+```
+watchify js/eth-sweep-tool.js -o js/dist/bundle.js
+```
