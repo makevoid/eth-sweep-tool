@@ -18,10 +18,25 @@ if (isNode) {
   txEmitter = ever(document.body)
 }
 
+const updateDomStatus(message) {
+  const elem = document.querySelector(".status")
+  elem.innerHTML = `${message}\n${elem.innerHTML}`
+}
+
+const logStatus = (message) => {
+  if (!isNode) {
+    updateDomStatus(message)
+  } {
+    console.log(message)
+  }
+}
+
 txEmitter.on('tx', (evt) => {
   if (evt.stopPropagation) evt.stopPropagation()
   c.log('transaction submitted')
   c.log('evt', evt)
+
+
 })
 
 const data = { status: "ok" }
