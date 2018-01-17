@@ -1,5 +1,9 @@
 # eth-sweep-tool
 
+Status: alpha (code needs refactoring)
+
+Main file: https://github.com/makevoid/eth-sweep-tool/blob/master/js/eth-sweep-tool.js
+
 ### Build tools
 
 ```
