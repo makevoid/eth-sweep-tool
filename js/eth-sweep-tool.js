@@ -99,7 +99,7 @@ const broadcastTransaction = async (rawTx) => {
   data.append('module', 'proxy')
   data.append('action', 'eth_sendRawTransaction')
   data.append('hex', rawTx)
-  data.append('apikey', '3DQFQQZ51G4M18SW8RDKHIMERD79GYTVEA')
+  data.append('apikey', '3DQFQQZ51G4M18SW8RDKHIMERD79GYTVEA') // TODO: please fork and use your own APi key
 
   let resp = await fetch(broadcastUrl, {
     method: "post",
