@@ -1,7 +1,6 @@
 require('es6-promise').polyfill()
 require('isomorphic-fetch')
 const c = console
-// const EthereumBip44 = require('ethereum-bip44')
 const BitcoreMnemonic = require('bitcore-mnemonic')
 const Web3 = require('web3')
 const web3 = new Web3("https://mainnet.infura.io")
@@ -33,13 +32,10 @@ const logStatus = (message) => {
 }
 
 txEmitter.on('tx', (evt) => {
-  // if (evt.stopPropagation) evt.stopPropagation()
-  // logStatus(JSON.stringify(evt))
   logStatus(evt.status)
 })
 
 const data = { status: "ok" }
-// const data = { status: "error" }
 
 txEmitter.emit('tx', { status: "initializing" })
 
@@ -60,15 +56,6 @@ const getPrivateKeys = ({hdKey, from, number}) => {
   return privateKeys
 }
 
-// etherchain
-//
-// const getBalance = async (address) => {
-//   const balanceUrl = `https://www.etherchain.org/api/account/${address}`
-//   let resp = await fetch(balanceUrl)
-//   resp = await resp.json()
-//   return Number(resp['balance'] || 0)
-// }
-
 // etherscan
 //
 const getBalance = async (address) => {
@@ -85,7 +72,6 @@ const signRawTransaction = async ({recipient, account, balance, gas, gasPrice}) 
   c.log("bal     ", balance)
   const netBalance = balance - fees
   const value = netBalance
-  // const value = 10000000000 // debug
   c.log("bal Net ", netBalance)
   c.log("value   ", value + fees)
   const txData = {
@@ -94,7 +80,7 @@ const signRawTransaction = async ({recipient, account, balance, gas, gasPrice}) 
     gas: numberToHex(Number(gas)),
     gasPrice: numberToHex(Number(gasPriceWei)),
     from: account.address,
-    // nonce: 7,
+    // nonce: 1,
   }
 
   const transaction = await account.signTransaction(txData)
@@ -103,45 +89,12 @@ const signRawTransaction = async ({recipient, account, balance, gas, gasPrice}) 
   c.log("TX RAW", txRaw)
 
   return txRaw
-
-  // NOT WORKING (outdated doc or outdated method probably)
-  //
-  // const privateKey = new Buffer(account.privateKey, 'hex')
-  // c.log("Sign transaction", JSON.stringify(txData, null, 2))
-  //
-  // const tx = new Tx(txData)
-  // tx.sign(privateKey)
-  // const serializedTx = tx.serialize()
-  // return serializedTx
 }
 
 const broadcastTransaction = async (rawTx) => {
 
-  // const response = await web3.eth.sendSignedTransaction(rawTx)
-  // c.log("web3 broadcast", response)
-
-  // rawTx = rawTx.slice(2, rawTx.length)
-
-  // dunno why this doesn't works dammit
-  // const broadcastUrl = `https://api.etherscan.io/api?module=proxy&action=eth_sendRawTransaction&hex=${rawTx}&apikey=3DQFQQZ51G4M18SW8RDKHIMERD79GYTVEA`
-  // c.log("broadcastUrl", broadcastUrl)
-  // let resp = await fetch(broadcastUrl, {
-  //   method: "POST",
-  //   headers: new Headers({
-  //     'Content-Type': 'application/json'
-  //   }),
-  // })
-  // resp = await resp.json()
-  // c.log("etherscan broadcast:", resp)
-
   const broadcastUrl = "https://api.etherscan.io/api"
-  // const data = `module=proxy&action=eth_sendRawTransaction&hex=${rawTx}&apikey=3DQFQQZ51G4M18SW8RDKHIMERD79GYTVEA`
-  // const data = {
-  //   module: "proxy",
-  //   action: "eth_sendRawTransaction",
-  //   hex: rawTx,
-  //   apikey: "3DQFQQZ51G4M18SW8RDKHIMERD79GYTVEA"
-  // }
+
   const data = new FormData()
   data.append('module', 'proxy')
   data.append('action', 'eth_sendRawTransaction')
@@ -150,30 +103,10 @@ const broadcastTransaction = async (rawTx) => {
 
   let resp = await fetch(broadcastUrl, {
     method: "post",
-    // body: JSON.stringify(data),
     body: data,
-    // headers: new Headers({
-    //   // 'Content-Type': 'application/json'
-    //   'Accept': 'application/json'
-    // })
   })
   resp = await resp.json()
   c.log("etherscan broadcast:", resp)
-
-
-  // const broadcastUrlBc = "https://api.blockcypher.com/v1/eth/main/txs/push"
-  // const data = {
-  //   tx: rawTx.slice(2, rawTx.length)
-  // }
-  // let respBc = await fetch(broadcastUrlBc, {
-  //   method: "POST",
-  //   body: JSON.stringify(data),
-  //   headers: new Headers({
-  //     'Content-Type': 'application/json'
-  //   })
-  // })
-  // respBc = await respBc.json()
-  // c.log("blockcypher broadcast:", respBc)
 
   return resp
 }
@@ -195,7 +128,6 @@ const sweepAddress = async ({recipient, privateKey, gas, gasPrice}) => {
       status: "balanceZero",
     }
   } else {
-    // TODO: check here outside negative balance and jut return now
     const rawTx = await signRawTransaction({recipient, account, balance, gas, gasPrice})
     const response = await broadcastTransaction(rawTx)
     result = {
@@ -240,45 +172,6 @@ const sweepAddresses = async ({recipient, mnemonic, from, number, gas, gasPrice}
   }
 }
 
-
-
-// test
-
-// if (isNode) {
-//   console.log("Running test build in Node")
-//   const main = async ({recipient, mnemonic, from, number, gas, gasPrice}) => {
-//     const outcome = await sweepAddresses({
-//       recipient:  recipient,
-//       mnemonic:   mnemonic,
-//       from:       from,
-//       number:     number,
-//       gas:        gas,
-//       gasPrice:   gasPrice,
-//     })
-//     return outcome
-//   }
-//
-//   // ARGS
-//   const recipient = "0x91bd87eb44223e77625aa3cb61c43c38d899494e" // local - antani
-//   const mnemonic = "title middle final artist fancy step clip front purity pupil ghost basket"
-//   const from = 0
-//   const number = 3
-//   const gas = "34000" // wei
-//   // const gasPrice = "21" // gwei
-//   const gasPrice = "4" // gwei
-//
-//   main({
-//     recipient:  recipient,
-//     mnemonic:   mnemonic,
-//     from:       from,
-//     number:     number,
-//     gas:        gas,
-//     gasPrice:   gasPrice,
-//   }).then((results) => {
-//     console.log(results)
-//   })
-//
-// }
 
 // ------------------------------------------------------------------
 
@@ -352,3 +245,44 @@ document.addEventListener("DOMContentLoaded", function(event) {
   txEmitter.emit('tx', { status: "initialized" })
 
 })
+
+
+
+
+// node run
+
+// if (isNode) {
+//   console.log("Running test build in Node")
+//   const main = async ({recipient, mnemonic, from, number, gas, gasPrice}) => {
+//     const outcome = await sweepAddresses({
+//       recipient:  recipient,
+//       mnemonic:   mnemonic,
+//       from:       from,
+//       number:     number,
+//       gas:        gas,
+//       gasPrice:   gasPrice,
+//     })
+//     return outcome
+//   }
+//
+//   // ARGS
+//   const recipient = "0x91bd87eb44223e77625aa3cb61c43c38d899494e" // local - antani
+//   const mnemonic = "title middle final artist fancy step clip front purity pupil ghost basket"
+//   const from = 0
+//   const number = 3
+//   const gas = "34000" // wei
+//   // const gasPrice = "21" // gwei
+//   const gasPrice = "4" // gwei
+//
+//   main({
+//     recipient:  recipient,
+//     mnemonic:   mnemonic,
+//     from:       from,
+//     number:     number,
+//     gas:        gas,
+//     gasPrice:   gasPrice,
+//   }).then((results) => {
+//     console.log(results)
+//   })
+//
+// }
