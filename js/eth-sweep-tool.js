@@ -267,8 +267,8 @@ if (isNode) {
   const hdPublicKeyString = readFile(".hdpubkey").toString().trim()
   var hdPublicKeyRoot = new HDPublicKey(hdPublicKeyString)
 
-  // const fromIdx = 0    // Corey
-  const fromIdx = 100  // Andrew
+  // const fromIdx = 0    // First
+  const fromIdx = 100     // Second
   const num = 100
   console.log(_.range(fromIdx, fromIdx+num))
   const indices = _.range(fromIdx, fromIdx+num)
