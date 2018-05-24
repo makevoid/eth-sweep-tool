@@ -2,17 +2,24 @@ require('es6-promise').polyfill()
 require('isomorphic-fetch')
 const c = console
 const BitcoreMnemonic = require('bitcore-mnemonic')
+const bitcore = require('bitcore-lib')
+const HDPublicKey = bitcore.HDPublicKey
 const Web3 = require('web3')
 const web3 = new Web3("https://mainnet.infura.io")
 const Tx = require('ethereumjs-tx')
 const numberToHex = web3.utils.numberToHex
 const toWei       = web3.utils.toWei
-const isNode = (typeof process === 'object' && typeof process.node === 'string' && typeof process.version === 'string')
+const isNode = (typeof process === 'object' && typeof process.version === 'string')
+const _ = require('lodash')
 let txEmitter
+let readFile
 if (isNode) {
   const EventEmitter = require('events')
   class TXEmitter extends EventEmitter {}
   txEmitter = new TXEmitter()
+
+  const fs = require('fs')
+  readFile = fs.readFileSync
 } else {
   const ever = require('ever')
   txEmitter = ever(document.body)
@@ -178,8 +185,8 @@ const sweepAddresses = async ({recipient, mnemonic, from, number, gas, gasPrice}
 // UI - TODO: separate view from core - TODO: reimplement in riot.js/vue/react/hyperhtml
 
 if (isNode) {
-  console.log("This is a browser build - exiting Node...")
-  process.exit()
+  // console.log("This is a browser build - exiting Node...")
+  // process.exit()
 }
 
 const main = async ({recipient, mnemonic, from, number, gas, gasPrice}) => {
@@ -211,78 +218,109 @@ const main = async ({recipient, mnemonic, from, number, gas, gasPrice}) => {
   return outcome
 }
 
-// elements
-document.addEventListener("DOMContentLoaded", function(event) {
+// browser
 
-  const recipient = document.querySelector("input[name='recipient']")
-  const mnemonic  = document.querySelector("input[name='mnemonic']")
-  const from      = document.querySelector("input[name='from']")
-  const number    = document.querySelector("input[name='number']")
-  const gas       = document.querySelector("input[name='gas']")
-  const gasPrice  = document.querySelector("input[name='gasPrice']")
-  const submitBtn = document.querySelector("button.submit")
+if (!isNode) {
 
-  // placeholder values
-  if (location.search == "?mkv=true") {
-    recipient.value = "0x91bd87eb44223e77625aa3cb61c43c38d899494e"
-    mnemonic.value = "title middle final artist fancy step clip front purity pupil ghost basket"
-  }
-  number.value = "3"
+  document.addEventListener("DOMContentLoaded", function(event) {
 
-  submitBtn.addEventListener("click", () => {
-    txEmitter.emit('tx', { status: "sweep started" })
-    main({
-      recipient: recipient.value,
-      mnemonic: mnemonic.value,
-      from: from.value,
-      number: number.value,
-      gas: gas.value,
-      gasPrice: gasPrice.value
-    }).then((results) => {
-      console.log(results)
+    const recipient = document.querySelector("input[name='recipient']")
+    const mnemonic  = document.querySelector("input[name='mnemonic']")
+    const from      = document.querySelector("input[name='from']")
+    const number    = document.querySelector("input[name='number']")
+    const gas       = document.querySelector("input[name='gas']")
+    const gasPrice  = document.querySelector("input[name='gasPrice']")
+    const submitBtn = document.querySelector("button.submit")
+
+    // placeholder values
+    if (location.search == "?mkv=true") {
+      recipient.value = "0x91bd87eb44223e77625aa3cb61c43c38d899494e"
+      mnemonic.value = "title middle final artist fancy step clip front purity pupil ghost basket"
+    }
+    number.value = "3"
+
+    submitBtn.addEventListener("click", () => {
+      txEmitter.emit('tx', { status: "sweep started" })
+      main({
+        recipient: recipient.value,
+        mnemonic: mnemonic.value,
+        from: from.value,
+        number: number.value,
+        gas: gas.value,
+        gasPrice: gasPrice.value
+      }).then((results) => {
+        console.log(results)
+      })
     })
+    txEmitter.emit('tx', { status: "initialized" })
+
   })
-  txEmitter.emit('tx', { status: "initialized" })
 
-})
-
+}
 
 
 
 // node run
 
-// if (isNode) {
-//   console.log("Running test build in Node")
-//   const main = async ({recipient, mnemonic, from, number, gas, gasPrice}) => {
-//     const outcome = await sweepAddresses({
-//       recipient:  recipient,
-//       mnemonic:   mnemonic,
-//       from:       from,
-//       number:     number,
-//       gas:        gas,
-//       gasPrice:   gasPrice,
-//     })
-//     return outcome
-//   }
-//
-//   // ARGS
-//   const recipient = "0x91bd87eb44223e77625aa3cb61c43c38d899494e" // local - antani
-//   const mnemonic = "title middle final artist fancy step clip front purity pupil ghost basket"
-//   const from = 0
-//   const number = 3
-//   const gas = "34000" // wei
-//   // const gasPrice = "21" // gwei
-//   const gasPrice = "4" // gwei
-//
-//   main({
-//     recipient:  recipient,
-//     mnemonic:   mnemonic,
-//     from:       from,
-//     number:     number,
-//     gas:        gas,
-//     gasPrice:   gasPrice,
-//   }).then((results) => {
-//     console.log(results)
-//   })
-//
-// }
+if (isNode) {
+
+  const hdPublicKeyString = readFile(".hdpubkey").toString().trim()
+  var hdPublicKeyRoot = new HDPublicKey(hdPublicKeyString)
+
+  // const fromIdx = 0    // Corey
+  const fromIdx = 100  // Andrew
+  const num = 100
+  console.log(_.range(fromIdx, fromIdx+num))
+  const indices = _.range(fromIdx, fromIdx+num)
+
+  indices.forEach((idx) => {
+    const hdPublicKey = hdPublicKeyRoot.derive(idx)
+    let publicKey = hdPublicKey.publicKey.toString()
+    publicKey = `0x${publicKey}`
+    // console.log(publicKey)
+
+    const ethJs = require('ethereumjs-wallet')
+    const account = ethJs.fromPublicKey(publicKey, true)
+    // console.log(account)
+    let address = account.getAddress()
+    address = `0x${address.toString('hex')}`
+    // console.log(address)
+
+    console.log(`${_.padStart(idx, 3, '0')}, m/60'/0'/${idx}, ${address}`)
+  })
+  process.exit()
+
+  console.log("Running test build in Node")
+  const main = async ({recipient, mnemonic, from, number, gas, gasPrice}) => {
+    const outcome = await sweepAddresses({
+      recipient:  recipient,
+      mnemonic:   mnemonic,
+      from:       from,
+      number:     number,
+      gas:        gas,
+      gasPrice:   gasPrice,
+    })
+    return outcome
+  }
+
+  // ARGS
+  const recipient = "0x91bd87eb44223e77625aa3cb61c43c38d899494e" // local - antani
+  const mnemonic = "title middle final artist fancy step clip front purity pupil ghost basket"
+  const from = 0
+  const number = 3
+  const gas = "34000" // wei
+  // const gasPrice = "21" // gwei
+  const gasPrice = "4" // gwei
+
+  main({
+    recipient:  recipient,
+    mnemonic:   mnemonic,
+    from:       from,
+    number:     number,
+    gas:        gas,
+    gasPrice:   gasPrice,
+  }).then((results) => {
+    console.log(results)
+  })
+
+}
